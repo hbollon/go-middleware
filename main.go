@@ -26,10 +26,12 @@ func main() {
 		ProcessPool = append(ProcessPool, &process)
 	}
 
-	message := Message{
-		Sender:    3,
-		Message:   "Bonjour",
-		Timestamp: 0,
+	message := BroadcastMessage{
+		Message{
+			Sender:    3,
+			Msg:       "Bonjour",
+			Timestamp: 0,
+		},
 	}
 
 	ProcessPool[3].com.broadcast(message)
