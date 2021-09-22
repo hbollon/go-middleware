@@ -35,22 +35,27 @@ func (c *Com) broadcast(msg BroadcastMessage) {
 	}
 }
 
-func (c *Com) sendTo(msg DedicatedMessage, dest int) {
+func (c *Com) sendTo(msg DedicatedMessage) {
 	c.mutex.Lock()
 	c.clock++
 	c.mutex.Unlock()
 
-	msg.Sender = dest
 	msg.Timestamp = c.clock
 	for i := 0; i < NbProcess; i++ {
 		c.bus.Send(msg)
 	}
 }
 
-func (c *Com) onDedicatedMessage(msg DedicatedMessage) {
+func (c *Com) onDedicatedMessage(receiver int, msg DedicatedMessage) {
 	c.mutex.Lock()
 	c.clock = max(c.clock, msg.Timestamp) + 1
 	c.mutex.Unlock()
+
+	if msg.Sender == receiver {
+		fmt.Printf("Process n°%d received msg: %v, clock: %d\n", receiver, msg, c.clock)
+	} else {
+		fmt.Printf("Process n°%d: rejected message\n", receiver)
+	}
 }
 
 func (p *Process) reader() {
@@ -60,7 +65,7 @@ func (p *Process) reader() {
 			if m, ok := msg.(BroadcastMessage); ok {
 				p.com.onBroadcast(p.id, m)
 			} else if m, ok := msg.(DedicatedMessage); ok {
-				p.com.onDedicatedMessage(m)
+				p.com.onDedicatedMessage(p.id, m)
 			}
 		default:
 			break

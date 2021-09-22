@@ -34,6 +34,16 @@ func main() {
 		},
 	}
 
+	dedicatedMessage := DedicatedMessage{
+		Message: Message{
+			Sender:    3,
+			Msg:       "Bonjour",
+			Timestamp: 0,
+		},
+		Receiver: 1,
+	}
+
 	ProcessPool[3].com.broadcast(message)
+	ProcessPool[3].com.sendTo(dedicatedMessage)
 	time.Sleep(10 * time.Second)
 }
