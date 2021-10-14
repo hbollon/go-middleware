@@ -17,19 +17,24 @@ func main() {
 	// Instanciation du bus de communication
 	bus := CreateBus()
 
+	// Initialisation de la pool de process
+	ProcessPool = make([]*Process, NbProcess)
+
 	// Instanciation du pool de process
 	for i := 0; i < NbProcess; i++ {
 		process := Process{
-			id: i,
+			id:       i,
+			syncChan: make(chan *sync.WaitGroup, 1),
 			com: Com{
-				bus:   &bus,
-				clock: 0,
-				mutex: sync.Mutex{},
+				bus:       &bus,
+				clock:     0,
+				mutex:     sync.Mutex{},
+				letterBox: make(LetterBox, 10),
 			},
 		}
 		// Lancement d'une goroutine exécutant la focntion reader pour chaque process
 		go process.reader()
-		ProcessPool = append(ProcessPool, &process)
+		ProcessPool[i] = &process
 	}
 
 	broadcastMessage := BroadcastMessage{
@@ -38,15 +43,6 @@ func main() {
 			Msg:       "Bonjour",
 			Timestamp: 0,
 			Synchrone: true,
-		},
-	}
-
-	broadcasMessagetAsync := BroadcastMessage{
-		Message{
-			Sender:    3,
-			Msg:       "Bonjour",
-			Timestamp: 0,
-			Synchrone: false,
 		},
 	}
 
@@ -60,24 +56,12 @@ func main() {
 		Receiver: 1,
 	}
 
-	dedicatedMessageAsync := DedicatedMessage{
-		Message: Message{
-			Sender:    3,
-			Msg:       "Bonjour",
-			Timestamp: 0,
-			Synchrone: false,
-		},
-		Receiver: 1,
-	}
-
 	fmt.Println("On fait un broadcast depuis le processus 3 :")
 	ProcessPool[3].com.broadcast(broadcastMessage)
-	ProcessPool[3].com.broadcast(broadcasMessagetAsync)
+	ProcessPool[3].com.broadcastSync(broadcastMessage)
 	fmt.Println("On envoie un message à 1 depuis le processus 3 :")
 	ProcessPool[3].com.sendTo(dedicatedMessage)
-	ProcessPool[3].com.sendTo(dedicatedMessageAsync)
-	time.Sleep(3 * time.Second)
-	fmt.Println("On va lire dans la boite aux lettre de 2 :")
-	ProcessPool[2].readLetterBox()
+	ProcessPool[3].com.sendToSync(dedicatedMessage)
+	ProcessPool[3].SyncAll()
 	time.Sleep(5 * time.Second)
 }
