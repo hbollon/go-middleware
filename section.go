@@ -3,12 +3,17 @@ package main
 
 import "time"
 
+// Token struct
 type Token struct {
 	processID int
 	clock     int
 }
 
+// Type énuméré pour deffinir les différents states
 type StateSectionCritique int
+
+// SCCallback est une fonction de callback pour la section critique acceptant
+// un nombre d'arguments illimité et de n'importe quel type
 type SCCallback func(...interface{})
 
 const (
@@ -17,6 +22,7 @@ const (
 	StateSectionCritique_Critical_Section
 )
 
+// SendToken incrémente l'horloge et envoie un token au process suivant
 func (p *Process) SendToken() {
 	p.IncClock()
 	token := Token{
@@ -27,6 +33,9 @@ func (p *Process) SendToken() {
 	ProcessPool[token.processID].tokenChan <- token
 }
 
+// OnToken est une routine exécuté sur une goroutine (thread) pour chaque process
+// Elle vérifie la présence d'un token dans le channel et si oui, elle passe le status du process à Critical_Section
+// (si il l'a demandé), attends que le token soit libéré et, enfin, envoie le token au process suivant
 func (p *Process) OnToken() {
 	for {
 		select {
@@ -50,6 +59,7 @@ func (p *Process) OnToken() {
 	}
 }
 
+// RequestCriticalSection demande la section critique et execute le callback une fois obtenue
 func (p *Process) RequestCriticalSection(callback SCCallback, args ...interface{}) {
 	p.state = StateSectionCritique_Requested
 	defer p.ReleaseCriticalSection() // on diffère la libération de la CS (éxécuté automatiquement en fin de programme ou de sortie de fonction)
@@ -64,6 +74,7 @@ func (p *Process) RequestCriticalSection(callback SCCallback, args ...interface{
 
 }
 
+// ReleaseCriticalSection libère la section critique
 func (p *Process) ReleaseCriticalSection() {
 	p.state = StateSectionCritique_Released
 }
