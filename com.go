@@ -1,5 +1,6 @@
-// BOLLON hugo / RODRIGUEZ Samuel
 package main
+
+// BOLLON hugo / RODRIGUEZ Samuel
 
 import (
 	"fmt"
@@ -30,51 +31,39 @@ type Com struct {
 	letterBox LetterBox
 }
 
-// onBroadcast est la fonction appelée lorsqu'un message de type BroadcastMessage
+// OnBroadcast est la fonction appelée lorsqu'un message de type BroadcastMessage
 // est reçu
-func (c *Com) onBroadcast(receiver int, msg BroadcastMessage) {
+func (c *Com) OnBroadcast(receiver int, msg BroadcastMessage) {
 	c.mutex.Lock()
-	c.clock = max(c.clock, msg.Timestamp) + 1
+	c.clock = Max(c.clock, msg.Timestamp) + 1
 	c.mutex.Unlock()
 	fmt.Printf("Process n°%d received msg: %v, clock: %d\n", receiver, msg, c.clock)
 }
 
-// broadcast envoi un message de type BroadcastMessage sur le bus
-func (c *Com) broadcast(msg BroadcastMessage) {
+// Broadcast envoi un message asynchrone de type BroadcastMessage directement dans la letterbox
+func (c *Com) Broadcast(msg BroadcastMessage) {
 	c.mutex.Lock()
 	c.clock++
 	c.mutex.Unlock()
 
 	msg.Timestamp = c.clock
 	for _, p := range ProcessPool {
-		p.sendLetterBox(msg)
+		p.SendLetterBox(msg)
 	}
 }
 
-// sendTo envoi un message de type DedicatedMessage sur le bus
-func (c *Com) sendTo(msg DedicatedMessage) {
+// SendTo envoi un message asynchrone de type DedicatedMessage dans la letterbox du receiver
+func (c *Com) SendTo(msg DedicatedMessage) {
 	c.mutex.Lock()
 	c.clock++
 	c.mutex.Unlock()
 
 	msg.Timestamp = c.clock
-	ProcessPool[msg.Receiver].sendLetterBox(msg)
+	ProcessPool[msg.Receiver].SendLetterBox(msg)
 }
 
-// broadcast envoi un message de type BroadcastMessage sur le bus
-func (c *Com) broadcastSync(msg BroadcastMessage) {
-	c.mutex.Lock()
-	c.clock++
-	c.mutex.Unlock()
-
-	msg.Timestamp = c.clock
-	for i := 0; i < NbProcess; i++ {
-		c.bus.Send(msg)
-	}
-}
-
-// sendTo envoi un message de type DedicatedMessage sur le bus
-func (c *Com) sendToSync(msg DedicatedMessage) {
+// BroadcastSync envoi un message synchrone de type BroadcastMessage sur le bus
+func (c *Com) BroadcastSync(msg BroadcastMessage) {
 	c.mutex.Lock()
 	c.clock++
 	c.mutex.Unlock()
@@ -85,11 +74,23 @@ func (c *Com) sendToSync(msg DedicatedMessage) {
 	}
 }
 
-// onDedicatedMessage est la fonction appelée lorsqu'un message de type DedicatedMessage
+// SendToSync envoi un message synchrone de type DedicatedMessage sur le bus
+func (c *Com) SendToSync(msg DedicatedMessage) {
+	c.mutex.Lock()
+	c.clock++
+	c.mutex.Unlock()
+
+	msg.Timestamp = c.clock
+	for i := 0; i < NbProcess; i++ {
+		c.bus.Send(msg)
+	}
+}
+
+// OnDedicatedMessage est la fonction appelée lorsqu'un message de type DedicatedMessage
 // est reçu
-func (c *Com) onDedicatedMessage(receiver int, msg DedicatedMessage) {
+func (c *Com) OnDedicatedMessage(receiver int, msg DedicatedMessage) {
 	c.mutex.Lock()
-	c.clock = max(c.clock, msg.Timestamp) + 1
+	c.clock = Max(c.clock, msg.Timestamp) + 1
 	c.mutex.Unlock()
 
 	if msg.Receiver == receiver {
@@ -99,15 +100,16 @@ func (c *Com) onDedicatedMessage(receiver int, msg DedicatedMessage) {
 	}
 }
 
-func (p *Process) sendLetterBox(payload interface{}) {
+// SendLetterBox envoi un message dans la boite aux lettres
+func (p *Process) SendLetterBox(payload interface{}) {
 	fmt.Println("Process n°", p.id, "sending msg in letterbox:", payload)
 	p.com.mutex.Lock()
 	p.com.letterBox <- payload // On depose le message
 	p.com.mutex.Unlock()
 }
 
-// readLetterBox lit le contenu de la boite aux lettres
-func (p *Process) readLetterBox() {
+// ReadLetterBox lit le contenu de la boite aux lettres
+func (p *Process) ReadLetterBox() {
 	p.com.mutex.Lock()
 	select {
 	case msg := <-p.com.letterBox:
@@ -126,24 +128,25 @@ func (p *Process) IncClock() {
 	p.com.mutex.Unlock()
 }
 
-// reader est une fonctione exécutée sur une goroutine (thread) qui lit constamment le bus
-func (p *Process) reader() {
+// Reader est une fonctione exécutée sur une goroutine (thread) qui vérifie continuellement le bus,
+// la letterbox et les demandes de synchronisation
+func (p *Process) Reader() {
 	for {
 		select {
 		case msg := <-*(p.com.bus):
 			if m, ok := msg.(BroadcastMessage); ok {
 				if !m.Synchrone {
-					p.sendLetterBox(m)
+					p.SendLetterBox(m)
 				} else {
-					p.com.onBroadcast(p.id, m)
+					p.com.OnBroadcast(p.id, m)
 				}
 			} else if m, ok := msg.(DedicatedMessage); ok {
 				if !m.Synchrone {
 					if m.Receiver == p.id {
-						p.sendLetterBox(m)
+						p.SendLetterBox(m)
 					}
 				} else {
-					p.com.onDedicatedMessage(p.id, m)
+					p.com.OnDedicatedMessage(p.id, m)
 				}
 			}
 			break
@@ -153,7 +156,7 @@ func (p *Process) reader() {
 			}
 			break
 		default:
-			p.readLetterBox()
+			p.ReadLetterBox()
 			break
 		}
 

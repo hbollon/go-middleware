@@ -1,5 +1,6 @@
-// BOLLON hugo / RODRIGUEZ Samuel
 package main
+
+// BOLLON hugo / RODRIGUEZ Samuel
 
 // Bus générique via un chanel acceptant n'importe quel type
 type Bus chan interface{}

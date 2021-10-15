@@ -1,5 +1,6 @@
-// BOLLON hugo / RODRIGUEZ Samuel
 package main
+
+// BOLLON hugo / RODRIGUEZ Samuel
 
 import "time"
 
@@ -9,7 +10,7 @@ type Token struct {
 	clock     int
 }
 
-// Type énuméré pour deffinir les différents states
+// Type énuméré pour definir les différents states
 type StateSectionCritique int
 
 // SCCallback est une fonction de callback pour la section critique acceptant
@@ -41,7 +42,7 @@ func (p *Process) OnToken() {
 		select {
 		case token := <-p.tokenChan:
 			if token.processID == p.id {
-				p.com.clock = max(p.com.clock, token.clock) + 1
+				p.com.clock = Max(p.com.clock, token.clock) + 1
 				if p.state == StateSectionCritique_Requested {
 					p.state = StateSectionCritique_Critical_Section
 					for p.state != StateSectionCritique_Released {

@@ -1,5 +1,6 @@
-// BOLLON hugo / RODRIGUEZ Samuel
 package main
+
+// BOLLON hugo / RODRIGUEZ Samuel
 
 import (
 	"fmt"
@@ -34,7 +35,7 @@ func main() {
 			},
 		}
 		// Lancement d'une goroutine exécutant la fonction reader pour chaque process
-		go process.reader()
+		go process.Reader()
 
 		// Lancement d'une goroutine exécutant la fonction onToken pour chaque process
 		go process.OnToken()
@@ -65,13 +66,13 @@ func main() {
 	ProcessPool[0].SendToken()
 
 	fmt.Println("On fait un broadcast depuis le processus 3 :")
-	ProcessPool[3].com.broadcast(broadcastMessage)
+	ProcessPool[3].com.Broadcast(broadcastMessage)
 	fmt.Println("On fait un broadcast synchrone depuis le processus 3 :")
-	ProcessPool[3].com.broadcastSync(broadcastMessage)
+	ProcessPool[3].com.BroadcastSync(broadcastMessage)
 	fmt.Println("On envoie un message à 1 depuis le processus 3 :")
-	ProcessPool[3].com.sendTo(dedicatedMessage)
+	ProcessPool[3].com.SendTo(dedicatedMessage)
 	fmt.Println("On envoie un message synchrone à 1 depuis le processus 3 :")
-	ProcessPool[3].com.sendToSync(dedicatedMessage)
+	ProcessPool[3].com.SendToSync(dedicatedMessage)
 	ProcessPool[3].SyncAll()
 	time.Sleep(5 * time.Second)
 

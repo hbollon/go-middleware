@@ -1,8 +1,9 @@
-// BOLLON hugo / RODRIGUEZ Samuel
 package main
 
+// BOLLON hugo / RODRIGUEZ Samuel
+
 // Retourne le plus grand entier entre a et b
-func max(a, b int) int {
+func Max(a, b int) int {
 	if a > b {
 		return a
 	}
