@@ -13,9 +13,11 @@ type LetterBox chan interface{}
 
 // Process est un processus comportant une instance de Com et un id
 type Process struct {
-	com      Com
-	id       int
-	syncChan chan *sync.WaitGroup
+	com       Com
+	id        int
+	syncChan  chan *sync.WaitGroup
+	tokenChan chan Token
+	state     StateSectionCritique
 }
 
 // Com est notre interface de communication
@@ -169,7 +171,7 @@ func (p *Process) SyncAll() {
 	for _, p := range ProcessPool {
 		p.syncChan <- &wg
 	}
-	wg.Wait() // on attend que tous les processus soient sync
+	wg.Wait() // on attend que tous les processus soient sync (waitgroup == 0)
 	fmt.Println("All processes are synchronized")
 }
 
