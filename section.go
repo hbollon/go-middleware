@@ -1,4 +1,4 @@
-package main
+package middleware
 
 // BOLLON hugo / RODRIGUEZ Samuel
 
@@ -27,11 +27,11 @@ const (
 func (p *Process) SendToken() {
 	p.IncClock()
 	token := Token{
-		clock:     p.com.clock,
-		processID: (p.id + 1) % NbProcess,
+		clock:     p.Com.Clock,
+		processID: (p.Id + 1) % NbProcess,
 	}
 
-	ProcessPool[token.processID].tokenChan <- token
+	ProcessPool[token.processID].TokenChan <- token
 }
 
 // OnToken est une routine exécuté sur une goroutine (thread) pour chaque process
@@ -40,17 +40,17 @@ func (p *Process) SendToken() {
 func (p *Process) OnToken() {
 	for {
 		select {
-		case token := <-p.tokenChan:
-			if token.processID == p.id {
-				p.com.clock = Max(p.com.clock, token.clock) + 1
-				if p.state == StateSectionCritique_Requested {
-					p.state = StateSectionCritique_Critical_Section
-					for p.state != StateSectionCritique_Released {
+		case token := <-p.TokenChan:
+			if token.processID == p.Id {
+				p.Com.Clock = Max(p.Com.Clock, token.clock) + 1
+				if p.State == StateSectionCritique_Requested {
+					p.State = StateSectionCritique_Critical_Section
+					for p.State != StateSectionCritique_Released {
 						time.Sleep(time.Millisecond * 10)
 					}
 				}
 				p.SendToken()
-				p.state = StateSectionCritique_Released
+				p.State = StateSectionCritique_Released
 			}
 			break
 		default:
@@ -62,14 +62,14 @@ func (p *Process) OnToken() {
 
 // RequestCriticalSection demande la section critique et execute le callback une fois obtenue
 func (p *Process) RequestCriticalSection(callback SCCallback, args ...interface{}) {
-	p.state = StateSectionCritique_Requested
+	p.State = StateSectionCritique_Requested
 	defer p.ReleaseCriticalSection() // on diffère la libération de la CS (éxécuté automatiquement en fin de programme ou de sortie de fonction)
 
-	for p.state != StateSectionCritique_Critical_Section {
+	for p.State != StateSectionCritique_Critical_Section {
 		time.Sleep(time.Millisecond * 10)
 	}
 
-	if p.state == StateSectionCritique_Critical_Section {
+	if p.State == StateSectionCritique_Critical_Section {
 		callback(args)
 	}
 
@@ -77,5 +77,5 @@ func (p *Process) RequestCriticalSection(callback SCCallback, args ...interface{
 
 // ReleaseCriticalSection libère la section critique
 func (p *Process) ReleaseCriticalSection() {
-	p.state = StateSectionCritique_Released
+	p.State = StateSectionCritique_Released
 }
