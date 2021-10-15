@@ -1,4 +1,4 @@
-package main
+package middleware
 
 // BOLLON hugo / RODRIGUEZ Samuel
 
